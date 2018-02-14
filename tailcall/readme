@@ -1,1 +1,101 @@
 https://tailcall.net/blog/cracking-randomness-lcgs/
+
+Il est expliqué sur ce site les différents types d'attaques sur des générateurs congruentiels linéaires.
+
+
+challenge0.py :
+On a ici un rappel sur la façon dont sont générés les générateurs congruentiels linéaires.
+Il faut quatre arguments pour avoir ce genre de génréateurs :
+- le terme initial (ou seed), appelé s0 ici
+- un multiplicateur (m)
+- un "incrémenteur" (c)
+- un modulo (n)
+Ce qui permet de générer des nombres grâce à la formule suivante :
+   sN+1 = (m * sN + i) % n
+
+
+challenge1.py :
+Dans ce premier challenge, on essaye de retrouver l'incrémenteur utilisé pour générer deux valeurs :
+     s0 = 4501678582054734753
+     s1 = 4371244338968431602
+avec les paramètres suivants :
+     m = 81853448938945944
+     c = # unknown
+     n = 9223372036854775783
+
+On a par définition la relation suivante :
+    s1 = s0 * m + c (mod n)
+que l'on peut réécrire :
+    c = s1 - s0 * m (mod n)
+
+On retrouve donc très simplement l'incrémenteur (si l'on a deux valeurs générées l'une après l'autre).
+
+
+challenge2.py :
+Dans ce second challenge, on cherche à présent à connaitre l'incrémenteur et le multiplicateur qui a généré les valeurs suivantes :
+     s0 = 647370280240994766A
+     s1 = 6562621845583276653
+     s2 = 4483807506768649573
+avec les paramètres suivants :
+     m = # unknown
+     c = # unknown
+     n = 9223372036854775783
+
+On se retrouve donc avec deux inconnues à deux équations :
+   s_1 = s0*m + c  (mod n)
+   s_2 = s1*m + c  (mod n)
+que l'on peut réécrire :
+    s_2 - s_1 = s1*m - s0*m  (mod n)
+    s_2 - s_1 = m*(s1 - s0)  (mod n)
+    m = (s_2 - s_1)/(s_1 - s_0)  (mod n)
+
+On a donc retrouvé le multiplicateur et, avec ce dernier, on peut à présent retrouver l'incrémenteur comme vu dans le challenge1
+
+
+challenge3.py :
+Pour ce dernier challenge, on a uniquement une suite de valeurs générées aléatoirement :
+   s0 = 2818206783446335158
+   s1 = 3026581076925130250
+   s2 = 136214319011561377
+   s3 = 359019108775045580
+   s4 = 2386075359657550866
+   s5 = 1705259547463444505
+   s6 = 2102452637059633432
+et on ne connait aucun des paramètres :
+   m = # unknown
+   c = # unknown
+   n = # unknown
+
+On peut donc écrire les trois équations suivantes :
+   s1 = s0*m + c  (mod n)
+   s2 = s1*m + c  (mod n)
+   s3 = s2*m + c  (mod n)
+si on simplifie les équations suivantes on obtient :
+   s1 - (s0*m + c) = 0 (mod n)
+   s2 - (s1*m + c) = 0 (mod n)
+   s3 - (s2*m + c) = 0 (mod n)
+et par définition, une valeur égale à 0 (mod n) est un multiple de n, on a donc :
+   a = s1 - (s0*m + c) = k_1 * n
+   b = s2 - (s1*m + c) = k_2 * n
+   c = s3 - (s2*m + c) = k_3 * n
+
+L'auteur de l'article du site mentionne une "astuce" mathématique qui nous est utile pour la suite.
+Il dit que si l'on prend plusieurs nombres multiples d'un certain n, alors il y a une large probabilité que leur
+pgcd (entre ces nombres) soit égal au n en question.
+On peut donc former une suite de valeurs comme a, b et c et il est très probable que leur pgcd soit le modulo recherché.
+Si on appelle cette sequence T(n) = S(n+1) - S(n), on a :
+   t0 = s1 - s0
+   t1 = s2 - s1 = (s1*m + c) - (s0*m + c) = m*(s1 - s0) = m*t0 (mod n)
+   t2 = s3 - s2 = (s2*m + c) - (s1*m + c) = m*(s2 - s1) = m*t1 (mod n)
+   t3 = s4 - s3 = (s3*m + c) - (s2*m + c) = m*(s3 - s2) = m*t2 (mod n)
+
+et enfin : t2*t0 - t1*t1 = (m*m*t0 * t0) - (m*t0 * m*t0) = 0 (mod n)
+
+Dans un premier temps on enregistre donc les valeurs de (sN+1 - sN) dans une liste,
+puis on enregistre les valeurs (multiples du modulo cherché) depuis la première liste et grâce à la relation t2*t0 - t1*t1
+et enfin on calcule le pgcd de ces valeurs entre elles, et ainsi on obtient notre modulo, puis le multiplicateur et enfin l'incrémenteur.
+
+Conclusion :
+
+Il est relativement simple de casser ce genre de générateurs même si ces derniers ne sont pas ou peu utilisés de manière générale.
+Il suffit simplement de quelques observations sur la formule générale des générateurs congruentiels linéaires.
